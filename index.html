@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Jeu des Pays Frontaliers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(120deg, #1e90ff, #00b894);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            gap: 20px;
+            /* Add gap between items */
+        }
+
+        .game {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 15px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            /* For the restart button */
+        }
+
+        #btnIconRestart {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            margin: 0;
+            width: auto;
+        }
+
+        #btnIconRestart svg {
+            width: 24px;
+            height: 24px;
+            fill: rgba(255, 255, 255, 0.7);
+            transition: fill 0.3s;
+        }
+
+        #btnIconRestart:hover svg {
+            fill: white;
+            background: none;
+        }
+
+        /* Override generic button hover for this specific button */
+        #btnIconRestart:hover {
+            background: none;
+        }
+
+        /* ... existing styles ... */
+
+        #historyList li {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .suggestion-item.active {
+            background-color: #ddd;
+            /* Active highlight */
+        }
+
+        /* ... existing styles ... */
+
+        #historyContainer {
+            /* Remove absolute positioning */
+            width: 250px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 15px;
+            /* Match game border radius */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            height: 400px;
+            /* Fixed height roughly matching game */
+            overflow-y: auto;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        input {
+            padding: 10px;
+            width: 80%;
+            border-radius: 8px;
+            border: none;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #ffeaa7;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #fdcb6e;
+        }
+
+        #btnValidate {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            background: #ffeaa7;
+            margin-top: 20px;
+        }
+
+        #btnValidate:hover {
+            background: #fdcb6e;
+        }
+
+        #btnRestart {
+            background: #ff7675;
+            color: white;
+            display: none;
+            /* Controlled by JS */
+            width: 100%;
+            /* Make it big too if desired, or keep standard */
+        }
+
+        #btnRestart:hover {
+            background: #d63031;
+        }
+
+        button:hover {
+            background: #fdcb6e;
+        }
+
+        .timer-container {
+            width: 100%;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background-color: #ffeaa7;
+            /* Match button color or choose a nice green/red */
+            transition: width 1s linear;
+        }
+
+        .message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        /* Autocomplete styles */
+        .input-wrapper {
+            position: relative;
+            width: 80%;
+            margin: 10px auto;
+        }
+
+        /* Override input width because it is now inside the wrapper */
+        .input-wrapper input {
+            width: 100%;
+            margin-top: 0;
+            /* Reset margin since wrapper handles spacing */
+            box-sizing: border-box;
+            /* Ensure padding doesn't overflow width */
+        }
+
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            /* Hidden by default */
+            text-align: left;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            color: #333;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        #historyContainer {
+            width: 250px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        #historyContainer h3 {
+            margin-top: 0;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        #historyList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        #historyList li {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #gameInterface {
+            display: none;
+            /* Hidden initially */
+            display: flex;
+            /* Will be set by JS, but just for reference */
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #welcomeScreen {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        #welcomeScreen h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        #welcomeScreen p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        #btnStart {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #ffeaa7;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #btnStart:hover {
+            background: #fdcb6e;
+        }
+
+        #victoryScreen,
+        #gameOverScreen {
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        #victoryScreen h1,
+        #gameOverScreen h1 {
+            color: #fdcb6e;
+        }
+
+        .timer-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0;
+            left: 0;
+            line-height: 20px;
+            font-weight: bold;
+            color: #333;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            #gameInterface {
+                flex-direction: column;
+                margin-top: 20px;
+                /* Add some space if needed */
+            }
+
+            #historyContainer {
+                width: 350px;
+                /* Match game width */
+                height: 200px;
+                /* Shorter on mobile */
+                max-width: 90%;
+                /* Ensure it doesn't overflow small screens */
+            }
+
+            .game {
+                max-width: 90%;
+                /* Ensure game fits on very small screens */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <body>
+
+        <div id="welcomeScreen">
+            <h1>Pays Frontaliers</h1>
+            <p>Trouvez un pays frontalier du pays affiché.<br>Attention : pas de doublons et chrono de 20s !</p>
+            <button id="btnStart" onclick="enterGame()">Lancer la partie</button>
+        </div>
+
+        <div id="victoryScreen">
+            <h1>VICTOIRE !</h1>
+            <p>Il n'y a plus de réponses possibles ! Bien joué !</p>
+            <button onclick="location.reload()">Rejouer</button>
+        </div>
+
+        <div id="gameOverScreen">
+            <h1>PERDU !</h1>
+            <p id="gameOverMessage">Vous avez perdu.</p>
+            <button onclick="restartGame()">Recommencer</button>
+        </div>
+
+        <div id="gameInterface" style="display: none;">
+            <div class="game">
+                <button id="btnIconRestart" onclick="restartGame()" title="Recommencer">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                    </svg>
+                </button>
+                <h1>Pays Frontaliers</h1>
+                <p>Pays actuel :</p>
+                <h2 id="currentCountry">Chargement...</h2>
+
+                <div class="timer-container">
+                    <div id="timerBar" class="timer-bar"></div>
+                    <span id="timerText" class="timer-text">20s</span>
+                </div>
+
+                <div class="input-wrapper">
+                    <input type="text" id="answer" autocomplete="off" placeholder="Pays frontalier">
+                    <div id="suggestions" class="suggestions-box"></div>
+                </div>
+                <br>
+                <button id="btnValidate" onclick="submitAnswer()">Valider</button>
+                <br>
+
+                <div class="message" id="message"></div>
+            </div>
+
+            <div id="historyContainer">
+                <h3>Pays joués</h3>
+                <ul id="historyList"></ul>
+            </div>
+        </div>
+
+        <script type="module">
+            import paysFrontaliers from "./countries.js";
+
+            let countries = Object.keys(paysFrontaliers);
+            let currentCountry = null;
+            let timer = 20;
+            let interval = null;
+            let usedCountries = new Set();
+
+            function startGame() {
+                // Choisir un pays ayant au moins un frontalier
+                const countriesWithBorders = countries.filter(c => paysFrontaliers[c].length > 0);
+                currentCountry = countriesWithBorders[Math.floor(Math.random() * countriesWithBorders.length)];
+
+                usedCountries.clear();
+                usedCountries.add(currentCountry);
+                updateHistory();
+
+                displayCountry();
+                resetTimer();
+                document.getElementById("answer").focus();
+            }
+
+            function updateHistory() {
+                const list = document.getElementById("historyList");
+                list.innerHTML = "";
+                usedCountries.forEach(c => {
+                    const li = document.createElement("li");
+                    li.textContent = c;
+                    list.appendChild(li);
+                });
+                // Auto scroll to bottom
+                const container = document.getElementById("historyContainer");
+                container.scrollTop = container.scrollHeight;
+            }
+
+            function displayCountry() {
+                document.getElementById("currentCountry").textContent = currentCountry;
+            }
+
+            function resetTimer() {
+                clearInterval(interval);
+                timer = 20;
+                const timerBar = document.getElementById("timerBar");
+                const timerText = document.getElementById("timerText"); // Get text element
+
+                timerBar.style.width = "100%";
+                timerBar.style.backgroundColor = "#ffeaa7";
+                timerText.textContent = timer + "s"; // Initial Text
+
+                interval = setInterval(() => {
+                    timer--;
+                    const percentage = (timer / 20) * 100;
+                    timerBar.style.width = percentage + "%";
+                    timerText.textContent = timer + "s"; // Update Text
+
+                    // Optional: Change color as time runs out
+                    if (timer <= 5) {
+                        timerBar.style.backgroundColor = "#ff7675"; // Red-ish
+                    }
+
+                    if (timer <= 0) {
+                        clearInterval(interval);
+                        showGameOver("Temps ecoule ! Perdu.");
+                    }
+                }, 1000);
+            }
+
+            function showGameOver(reason) {
+                document.getElementById("gameInterface").style.display = "none";
+                document.getElementById("gameOverScreen").style.display = "block";
+                document.getElementById("gameOverMessage").textContent = reason;
+            }
+
+            function checkVictory() {
+                const allNeighbors = paysFrontaliers[currentCountry] || [];
+                // Check if all neighbors are already used
+                const remaining = allNeighbors.filter(n => !usedCountries.has(n));
+
+                if (remaining.length === 0) {
+                    // Victory!
+                    clearInterval(interval);
+                    document.getElementById("gameInterface").style.display = "none";
+                    document.getElementById("victoryScreen").style.display = "block";
+                }
+            }
+
+            function normalize(text) {
+                return text
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "");
+            }
+
+            window.submitAnswer = function () {
+                const inputRaw = document.getElementById("answer").value.trim();
+                document.getElementById("answer").value = "";
+
+                if (!inputRaw) return;
+
+                const input = normalize(inputRaw);
+
+                const foundCountry = countries.find(
+                    c => normalize(c) === input
+                );
+
+                if (!foundCountry) {
+                    document.getElementById("message").textContent = "Pays inconnu";
+                    return;
+                }
+
+                if (usedCountries.has(foundCountry)) {
+                    document.getElementById("message").textContent = "Ce pays a deja ete joue !";
+                    return;
+                }
+
+                const borders = paysFrontaliers[currentCountry] || [];
+
+                if (borders.includes(foundCountry)) {
+                    document.getElementById("message").textContent =
+                        "Correct ! A l'autre joueur !";
+                    currentCountry = foundCountry;
+                    usedCountries.add(currentCountry);
+                    updateHistory();
+                    displayCountry();
+                    resetTimer();
+                    checkVictory();
+                    document.getElementById("answer").focus();
+                } else {
+                    document.getElementById("message").textContent =
+                        "Pas frontalier ! Perdu.";
+                    clearInterval(interval);
+                    showGameOver("Pas frontalier ! Perdu (" + foundCountry + ").");
+                }
+            };
+
+            // Autocomplete Logic
+            const inputField = document.getElementById("answer");
+            const suggestionsBox = document.getElementById("suggestions");
+            let currentFocus = -1; // Index of currently focused suggestion
+
+            inputField.addEventListener("input", () => {
+                const query = inputField.value;
+                currentFocus = -1; // Reset focus on input change
+                if (!query) {
+                    suggestionsBox.style.display = "none";
+                    return;
+                }
+
+                const normalizedQuery = normalize(query);
+                const matches = countries.filter(c => normalize(c).startsWith(normalizedQuery));
+
+                if (matches.length > 0) {
+                    renderSuggestions(matches);
+                } else {
+                    suggestionsBox.style.display = "none";
+                }
+            });
+
+            function renderSuggestions(matches) {
+                suggestionsBox.innerHTML = "";
+                matches.slice(0, 5).forEach(country => { // Limit to 5 suggestions
+                    const div = document.createElement("div");
+                    div.classList.add("suggestion-item");
+                    div.textContent = country;
+                    div.onclick = () => {
+                        inputField.value = country;
+                        suggestionsBox.style.display = "none";
+                        inputField.focus();
+                    };
+                    suggestionsBox.appendChild(div);
+                });
+                suggestionsBox.style.display = "block";
+            }
+
+            function addActive(x) {
+                if (!x) return false;
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                x[currentFocus].classList.add("active");
+                // Optional: scroll into view
+            }
+
+            function removeActive(x) {
+                for (let i = 0; i < x.length; i++) {
+                    x[i].classList.remove("active");
+                }
+            }
+
+            // Hide suggestions when clicking outside
+            document.addEventListener("click", (e) => {
+                if (!inputField.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.style.display = "none";
+                }
+            });
+
+            document.getElementById("answer").addEventListener("keydown", (e) => {
+                const x = suggestionsBox.getElementsByClassName("suggestion-item");
+                if (e.key === "ArrowDown") {
+                    currentFocus++;
+                    addActive(x);
+                } else if (e.key === "ArrowUp") {
+                    currentFocus--;
+                    addActive(x);
+                } else if (e.key === "Enter") {
+                    e.preventDefault(); // Prevent submitting form if selecting suggestion
+                    if (currentFocus > -1) {
+                        // Simulate click on active suggestion
+                        if (x) x[currentFocus].click();
+                        currentFocus = -1;
+                    } else {
+                        submitAnswer();
+                    }
+                }
+            });
+
+            window.enterGame = function () {
+                document.getElementById("welcomeScreen").style.display = "none";
+                document.getElementById("gameInterface").style.display = "flex";
+                startGame();
+            }
+
+            window.restartGame = function () {
+                clearInterval(interval);
+                document.getElementById("message").textContent = "";
+                document.getElementById("answer").value = "";
+                document.getElementById("gameOverScreen").style.display = "none";
+                document.getElementById("gameInterface").style.display = "flex";
+                startGame();
+            };
+
+        </script>
+
+
+    </body>
+
+</html>
